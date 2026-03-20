@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WHOOP Integration Design - Runmaxxing</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .spec-section { margin-top: 36px; }
+    .screen-mock {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin: 20px 0;
+      max-width: 380px;
+    }
+    .screen-mock h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    .mock-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .mock-row:last-child { border-bottom: none; }
+    .mock-label { font-size: 15px; font-weight: 600; color: var(--text); }
+    .mock-value { font-size: 15px; font-weight: 700; }
+    .mock-green { color: #16a34a; }
+    .mock-yellow { color: #d97706; }
+    .mock-red { color: #ef4444; }
+    .mock-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-yellow { background: #fef3c7; color: #d97706; }
+    .flow-step {
+      display: flex;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .flow-num {
+      width: 32px;
+      height: 32px;
+      background: #16a34a;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .flow-text { font-size: 15px; line-height: 1.5; color: #4b5563; }
+    .flow-text strong { color: var(--text); }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+    .data-table th, .data-table td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .data-table th {
+      font-weight: 700;
+      color: var(--text);
+      background: #f3f4f6;
+    }
+    .data-table td { color: #4b5563; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav-brand">
+      <img class="nav-logo" src="logo.png" alt="Runmaxxing">
+      <span>runmaxxing</span>
+    </a>
+  </nav>
+
+  <main class="legal">
+    <h1>WHOOP Integration Design</h1>
+    <p class="updated">Runmaxxing &mdash; UX Specification for WHOOP Data Integration</p>
+
+    <h2>Overview</h2>
+    <p>Runmaxxing is an AI-powered running plan app that generates personalized training plans from users' real activity data (Strava, Apple HealthKit, Garmin Connect). Adding WHOOP recovery data will allow us to make smarter training recommendations &mdash; adjusting workout intensity based on how recovered the runner actually is.</p>
+
+    <div class="spec-section">
+      <h2>Data We'll Use</h2>
+      <table class="data-table">
+        <thead>
+          <tr><th>WHOOP Data Point</th><th>How We Use It</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Recovery Score (0-100%)</td><td>Adjust daily workout intensity: green (67-100%) = full effort, yellow (34-66%) = reduce intensity, red (0-33%) = suggest rest or easy run</td></tr>
+          <tr><td>HRV (Heart Rate Variability)</td><td>Track recovery trends over time to refine plan intensity during build/peak phases</td></tr>
+          <tr><td>Resting Heart Rate</td><td>Flag overtraining when RHR trends upward; suggest recovery days</td></tr>
+          <tr><td>Sleep Performance</td><td>Context for recovery recommendations; surface in AI Coach conversations</td></tr>
+          <tr><td>Strain Score</td><td>Compare planned vs actual training load to prevent overtraining</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="spec-section">
+      <h2>User Flow: Connecting WHOOP</h2>
+
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-text"><strong>Profile &gt; Connected Accounts</strong> &mdash; User taps "Connect" next to the WHOOP row (currently shows "Recovery sync coming next" placeholder).</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-text"><strong>OAuth Authorization</strong> &mdash; In-app browser opens WHOOP's authorization page. User logs in and grants access to recovery, sleep, and workout scopes.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-text"><strong>Token Exchange</strong> &mdash; App sends the authorization code to our server, which exchanges it for access/refresh tokens stored securely in our database.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-text"><strong>Connected</strong> &mdash; Profile shows a green checkmark. Recovery data starts syncing immediately via WHOOP webhooks and is displayed in the app.</div>
+      </div>
+    </div>
+
+    <div class="spec-section">
+      <h2>UX: Today Screen &mdash; Recovery-Aware Workouts</h2>
+      <p>When WHOOP is connected, the Today screen shows today's recovery status above the workout card. If recovery is low, the workout recommendation adapts.</p>
+
+      <div class="screen-mock">
+        <h4>Today &mdash; Normal Recovery</h4>
+        <div class="mock-row">
+          <span class="mock-label">WHOOP Recovery</span>
+          <span class="mock-badge badge-green">78% Green</span>
+        </div>
+        <div class="mock-row">
+          <span class="mock-label">Today's Workout</span>
+          <span class="mock-value">Tempo &middot; 5 mi</span>
+        </div>
+        <div class="mock-row">
+          <span class="mock-label">Recommendation</span>
+          <span class="mock-value mock-green">Full send &mdash; you're well recovered</span>
+        </div>
+      </div>
+
+      <div class="screen-mock">
+        <h4>Today &mdash; Low Recovery</h4>
+        <div class="mock-row">
+          <span class="mock-label">WHOOP Recovery</span>
+          <span class="mock-badge badge-yellow">42% Yellow</span>
+        </div>
+        <div class="mock-row">
+          <span class="mock-label">Planned Workout</span>
+          <span class="mock-value" style="text-decoration: line-through; color: #9ca3af;">Tempo &middot; 5 mi</span>
+        </div>
+        <div class="mock-row">
+          <span class="mock-label">Adjusted Workout</span>
+          <span class="mock-value">Easy &middot; 3 mi</span>
+        </div>
+        <div class="mock-row">
+          <span class="mock-label">Recommendation</span>
+          <span class="mock-value mock-yellow">Recovery is low &mdash; swapped to easy run</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-section">
+      <h2>UX: AI Coach &mdash; Recovery Context</h2>
+      <p>The AI Coach has access to WHOOP recovery data, enabling conversations like:</p>
+      <div class="screen-mock">
+        <h4>AI Coach Conversation</h4>
+        <div style="background: #111827; color: white; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; font-size: 14px;">
+          My legs feel heavy today. Should I still do the tempo?
+        </div>
+        <div style="background: #f3f4f6; color: #111827; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.5;">
+          <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
+            <span style="background: #16a34a; color: white; font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 4px;">AI</span>
+            <span style="font-size: 12px; color: #9ca3af; font-weight: 600;">Coach</span>
+          </div>
+          Your WHOOP shows 38% recovery with elevated RHR. I'd swap today's tempo for an easy 3-miler and move the tempo to Friday when you should be more recovered. Want me to adjust the plan?
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-section">
+      <h2>UX: Profile &mdash; Connected Accounts</h2>
+      <div class="screen-mock">
+        <h4>Connected Accounts</h4>
+        <div class="mock-row">
+          <span class="mock-label">Strava</span>
+          <span class="mock-badge badge-green">Connected</span>
+        </div>
+        <div class="mock-row">
+          <span class="mock-label">WHOOP</span>
+          <span class="mock-badge badge-green">Connected</span>
+        </div>
+        <div class="mock-row">
+          <span class="mock-label">Apple Health</span>
+          <span class="mock-value" style="color: #9ca3af; font-size: 14px;">Not connected</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-section">
+      <h2>Technical Architecture</h2>
+      <ul>
+        <li><strong>Auth:</strong> OAuth 2.0 via WHOOP API &mdash; redirect URI: <code>runmaxxing://whoop-callback</code></li>
+        <li><strong>Data sync:</strong> WHOOP webhooks push recovery/sleep/workout updates in real-time to our server</li>
+        <li><strong>Storage:</strong> Recovery scores and sleep data stored per-user in our database, linked to training plan dates</li>
+        <li><strong>Plan adaptation:</strong> AI Coach and plan engine read recovery data to adjust daily workout recommendations</li>
+        <li><strong>Privacy:</strong> Users can disconnect WHOOP at any time from the Profile screen. All WHOOP data is deleted on disconnect.</li>
+      </ul>
+    </div>
+
+    <div class="spec-section">
+      <h2>Scopes Requested</h2>
+      <ul>
+        <li><code>read:recovery</code> &mdash; Daily recovery scores, HRV, resting heart rate</li>
+        <li><code>read:sleep</code> &mdash; Sleep performance and duration</li>
+        <li><code>read:workout</code> &mdash; WHOOP-tracked workout strain data</li>
+      </ul>
+      <p>We do not request any write scopes. Runmaxxing only reads WHOOP data.</p>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img class="footer-logo" src="logo.png" alt="Runmaxxing">
+        <span>runmaxxing</span>
+      </div>
+      <p class="footer-copy">&copy; 2026 Runmaxxing. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>
